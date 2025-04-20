@@ -269,7 +269,7 @@ plot3d_and_report_prism <- function( level, prev_pr, pr )
                           ################
 
 
-sink( "junk1.out" )
+# sink( "junk1.out" )
 curr_z <- 0
 
 
@@ -329,7 +329,7 @@ for ( level in 2:3 )
 
 cat( "Program ends.   Max height ", full_height, "\n" )
 
-sink()
+# sink()
 
 #
 # End program
