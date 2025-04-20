@@ -49,6 +49,12 @@ L0 <- 48                  # inches, length of base rods
 b0 <- 32                  # inches, length of base triagle (cable)
 
 
+# 
+# globals
+#
+
+full_height <- 0   
+
 #########################################################################
 # create_prism( level, z_base, b, L, rot_angle=0 )
 #
@@ -127,32 +133,73 @@ create_prism <- function( level, z_base, b, L, rot_angle=0 )
        }
 
     list( xb = xb, yb = yb, zb = zb, 
-          xt = xt, yt = yt, zt = zt )
+          xt = xt, yt = yt, zt = zt
+        )
+   }
+
+distance <- function( x1, x2, y1, y2, z1, z2 )
+   return( sqrt( (x1-x2)^2 + (y1-y2)^2 + (z1-z2)^2 ) )
+
+report <- function( ... )
+    cat( "report: ", ..., "\n" )
+
+#
+# this plots/renders the dowels (cylinder structs) for one prism level
+#
+plot3d_struts <- function( pr )
+   {
+    for ( i in 1:3 )
+       {
+        dowel_top_centers <- cbind( c( pr$xb[i], pr$xt[i] ), c( pr$yb[i], pr$yt[i] ), 
+                                c( pr$zb[i], pr$zt[i] ) )
+        print( dowel_top_centers )
+        dowel <- cylinder3d( dowel_top_centers, radius=cyl_rad )
+        shade3d( dowel, col = "darkgreen" )
+       }
+   }
+
+#
+# this reports the lengths of the struts
+#
+
+report_struts <- function( msg, pr )
+   {
+    d <- distance( pr$xb[1], pr$xt[1], 
+                   pr$yb[1], pr$yt[1], 
+                   pr$zb[1], pr$zt[1] )
+    report( msg," dowels: 3  ", " length = ", d )
+   }
+
+#
+# this reports the number and length of a line segment (assumed to repeat)
+#
+
+report_lines <- function( msg, n, xs, ys, zs )
+   {
+    d <- distance( xs[1], xs[2],  ys[1], ys[2],  zs[1], zs[2] )
+    report( msg, n, " count ", d, "\n" )
    }
 
 
 
-plot_prism_3d <- function( level, prev_pr, pr )
+plot3d_and_report_prism <- function( level, prev_pr, pr )
    {
     # dowels (compression rods)
     
-    for ( i in 1:3 )
-       {
-        dowel_centers <- cbind( c( pr$xb[i], pr$xt[i] ), c( pr$yb[i], pr$yt[i] ), 
-                                c( pr$zb[i], pr$zt[i] ) )
-        cat( i, " dowel_centers\n" )
-        print( dowel_centers )
-        dowel <- cylinder3d( dowel_centers, radius=cyl_rad )
-        shade3d( dowel, col = "darkgreen" )
-       }
+    plot3d_struts( pr )
+    report_struts( paste( "level", level ), pr )
 
     # base
 
     if ( level == 1 )
-         lines3d( c(pr$xb, pr$xb[1]), c(pr$yb, pr$yb[1]), c(pr$zb, pr$zb[1]), col="cornflowerblue" )
+       {
+        lines3d( c(pr$xb, pr$xb[1]), c(pr$yb, pr$yb[1]), c(pr$zb, pr$zb[1]), col="cornflowerblue" )
+        report_lines( "base (level 1) lines ", 3, pr$xb[1:2], pr$yb[1:2], pr$zb[1:2] )
+       }
+         
     #lines3d( c(pr$xt, pr$xt[1]), c(pr$yt, pr$yt[1]), c(pr$zt, pr$zt[1]), col="darkorchid1")
 
-    # tension lines between top and bottom
+    # version tension lines between top and bottom
     # note to self; put this in loop with modulo
 
     for ( j in 1:3 )
@@ -162,6 +209,10 @@ plot_prism_3d <- function( level, prev_pr, pr )
                  col="orange")
         # pr 3 -> 2
        }
+    report_lines( paste( "level", toString( level ),"vertical" ), 3, 
+                  c( pr$xt[1], pr$xb[3] ), c( pr$yt[1], pr$yb[3] ), c( pr$zt[1], pr$zb[3] ) )
+
+    # 
     if ( level > 1 )
         for ( j in 1:3 )
            {
@@ -169,9 +220,11 @@ plot_prism_3d <- function( level, prev_pr, pr )
             #k <- (j + 1) %% 3 + 1
             k <- j %% 3 + 1
             lines3d( c( pr$xb[j], prev_pr$xb[k] ), c( pr$yb[j], prev_pr$yb[k] ), c( pr$zb[j], prev_pr$zb[k] ),
-                     col="deeppink4")
+                     col="deeppink4" )
             # pr 3 -> 2
            }
+    report_lines( paste( "level", toString( level ),"upper base vertical to lower" ), 3,
+                  c( pr$xb[1], prev_pr$xb[2] ), c( pr$yb[1], prev_pr$yb[2] ), c( pr$zb[1], prev_pr$zb[2] ) )
 
     # Coordinate box
 
@@ -199,13 +252,24 @@ plot_prism_3d <- function( level, prev_pr, pr )
                     prev_pr$zt[1], pr$zb[3],
                     prev_pr$zt[2] ),
              col="red" )
+
+        report_lines( paste( "level", toString( level ),"base lines a" ), 3,
+                      c( prev_pr$xt[2], pr$xb[1] ), c( prev_pr$yt[2], pr$yb[1] ), c( prev_pr$zt[2], pr$zb[1] ) )
+        report_lines( paste( "level", toString( level ),"base lines b" ), 3,
+                      c( pr$xb[1], prev_pr$xt[3] ), c( pr$yb[1], prev_pr$yt[3] ), c( pr$zb[1], prev_pr$zt[3] ) )
+
+
        }
    }
+
+
 
                           ################
                           # Main program #
                           ################
 
+
+sink( "junk1.out" )
 curr_z <- 0
 
 
@@ -214,6 +278,9 @@ curr_z <- 0
 #
 
 lower_prism <- create_prism( level = 1, z_base = curr_z, b0, L=L0 )
+full_height <- max( lower_prism$zt )
+cat( "full_height ", full_height, "\n" )
+
 #  (no rotation at this level)
 
 cat( "level 1 lower_prism is\n" )
@@ -221,7 +288,7 @@ print( lower_prism )
 
 open3d()
 
-plot_prism_3d( 1, lower_prism, low_prism )
+plot3d_and_report_prism( 1, lower_prism, lower_prism )
 
 #
 # Now we iterate over all upper prisms, stacking them
@@ -235,8 +302,10 @@ for ( level in 2:3 )
     L                  <- prev_L - 4
     f                  <- L / prev_L
     b                  <- f * b
+    prev_L             <- L
 
     # place this prism bottom 30% lower than previous prism top
+
     lower_prism_height <- lower_prism$zt[1] - lower_prism$zb[1]
     curr_z             <- lower_prism$zt[1] - 0.3 * lower_prism_height
 
@@ -245,19 +314,22 @@ for ( level in 2:3 )
     cat( "level ", level, "lower_prism_height", lower_prism_height, " curr_z ", curr_z, 
          " b is ", b, "\n" ) 
     cat( "lower_prism is\n" )
-    print( upper_prism )
+    print( lower_prism )
     
     upper_prism <- create_prism( level = 2, z_base = curr_z, b, L, rot_angle = rot )
+    full_height <- max( upper_prism$zt )
+    cat( "full_height ", full_height, "\n" )
     
     cat( "level ", level, " prism is\n" )
     print( upper_prism )
     
-    plot_prism_3d( 2, lower_prism, upper_prism )
+    plot3d_and_report_prism( level, lower_prism, upper_prism )
     lower_prism <- upper_prism
    }
 
+cat( "Program ends.   Max height ", full_height, "\n" )
 
-cat( "Program ends.   Max height ", upper_prism$zt[1], "\n" )
+sink()
 
 #
 # End program
