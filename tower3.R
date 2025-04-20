@@ -38,10 +38,22 @@ rotate <- function( theta, x, y, z )
 # Tower constant parameters
 # 
 cyl_rad    <- (3/8) / 2                     # inches, radius of rods (3/8" dowels)
-beta       <- (1/2) * (pi / 3 + pi / 4)     # angle from horizontal of rods
+#beta       <- (1/2) * (pi / 3 + pi / 4)     # angle from horizontal of rods
+beta       <- pi / 4                        # angle from horizontal of rods
 alpha      <- pi / 10                       # angle (ccw) from base triangle line 
 #rot_offset <- pi / 4                        # how much each prism is rotated wrt previous
 rot_offset <- pi / 3                        # how much each prism is rotated wrt previous
+num_levels <- 12                            # number of prism levels
+
+reduce_strut_length <- function( L )
+   {
+    #new_L <- L - 5 
+    new_L <- (11/12) * L
+    if ( new_L <= 0 )
+        stop( "Negative L ", L, " ", new_L  )
+    return( new_L )
+   }
+
 
 # base level parameters
 
@@ -296,10 +308,10 @@ plot3d_and_report_prism( 1, lower_prism, lower_prism )
 b      <- b0
 prev_L <- L0
 
-for ( level in 2:3 )
+for ( level in 2:num_levels )
    {
     # subsequent z 
-    L                  <- prev_L - 4
+    L                  <- reduce_strut_length( prev_L )
     f                  <- L / prev_L
     b                  <- f * b
     prev_L             <- L
